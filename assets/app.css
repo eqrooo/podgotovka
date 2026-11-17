@@ -286,6 +286,10 @@ dialog.fb[open]{animation:pageIn .35s var(--ease)}
 .fb textarea,.fb select{width:100%;border:1.5px solid var(--line);border-radius:12px;padding:10px 12px;font:inherit;font-size:15px;resize:vertical}
 .fb textarea:focus,.fb select:focus{outline:none;border-color:var(--blue-2)}
 .fb .row{display:flex;gap:10px;justify-content:flex-end}
+.fb-hint{margin:0;font-size:13px;color:var(--muted,#64748b)}
+.fb-re{display:grid;gap:12px;max-height:60vh;overflow:auto}
+.fb-re .q{font-size:13px;color:var(--muted,#64748b);border-left:3px solid var(--line);padding-left:10px;white-space:pre-wrap}
+.fb-re .a{white-space:pre-wrap;background:rgba(37,99,235,.07);border-radius:12px;padding:10px 12px;margin-top:6px}
 .fb .st{font-size:14px;min-height:20px}
 .hp{position:absolute;left:-9999px;width:1px;height:1px;opacity:0}
 

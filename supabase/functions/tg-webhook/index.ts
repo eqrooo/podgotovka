@@ -1,4 +1,4 @@
-// Вебхук Telegram-бота: кнопки «Принять / Отклонить» заявок и привязка Telegram к админу (/start link_<token>).
+// Вебхук Telegram-бота: кнопки «Принять / Отклонить» заявок, привязка Telegram к админу (/start link_<token>) и ответы на сообщения с сайта.
 // Запросы принимаются только с секретным заголовком, который Telegram ставит по setWebhook.
 import { db, tg, secret, enc } from '../_shared/sb.ts';
 
@@ -43,10 +43,21 @@ async function onMessage(m: any) {
     return tg('sendMessage', { chat_id: chat, text: `✅ Telegram привязан к ${l.email}. Теперь код для входа в админку будет приходить сюда.` });
   }
   const admin = await adminByChat(chat);
+  // Reply на уведомление «✉️ Сообщение с сайта #N» = ответ автору (он увидит его на сайте)
+  const orig = String(m.reply_to_message?.text || '');
+  const fb = orig.match(/^✉️ Сообщение с сайта #(\d+)/);
+  if (admin && fb && text.trim()) {
+    if (text.length > 2000) return tg('sendMessage', { chat_id: chat, text: 'Слишком длинно: максимум 2000 символов.' });
+    const [row] = await db(`feedback?select=id,ticket&id=eq.${fb[1]}`);
+    if (!row) return tg('sendMessage', { chat_id: chat, text: 'Сообщение уже удалено.', reply_to_message_id: m.message_id });
+    if (!row.ticket) return tg('sendMessage', { chat_id: chat, text: 'Это сообщение отправлено старой версией сайта — автору ответ не дойдёт.', reply_to_message_id: m.message_id });
+    await db(`feedback?id=eq.${row.id}`, { method: 'PATCH', body: JSON.stringify({ reply: text.trim(), replied_at: new Date().toISOString(), replied_by: admin.email, resolved: true }), headers: { Prefer: 'return=minimal' } });
+    return tg('sendMessage', { chat_id: chat, text: `✅ Ответ сохранён. Автор увидит его, когда снова откроет сайт.`, reply_to_message_id: m.message_id });
+  }
   return tg('sendMessage', {
     chat_id: chat,
     text: admin
-      ? `Привет! Сюда приходят ошибки сайта, сообщения из формы, заявки на доступ и коды входа.\nАдминка: https://eqrooo.github.io/podgotovka/admin.html`
+      ? `Привет! Сюда приходят ошибки сайта, сообщения из формы, заявки на доступ и коды входа.\nЧтобы ответить автору сообщения, нажми на уведомление «Ответить» (Reply) и напиши текст.\nАдминка: https://eqrooo.github.io/podgotovka/admin.html`
       : 'Это служебный бот сайта «Подготовка по предметам».',
   });
 }

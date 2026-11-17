@@ -28,7 +28,7 @@ const UI={
   know:'Знаю',dont:'Повторить',flip:'нажми, чтобы перевернуть',dir1:'EN → RU',dir2:'RU → EN',shuffle:'Перемешать',restart:'Сначала',
   left:'осталось',cardsDone:'Все карточки пройдены!',cardsStat:'С первого раза',noData:'Для этой темы пока нет материалов.',
   term:'Термин',trans:'Перевод',fb:'Нашли ошибку?',fbT:'Сообщить об ошибке',fbPh:'Что не так? Например: «Тест, вопрос 3 — неверный ответ»',fbSend:'Отправить',fbCancel:'Отмена',
-  fbOk:'Спасибо! Сообщение отправлено.',fbErr:'Не удалось отправить. Попробуй позже.',fbShort:'Напиши хотя бы пару слов.',
+  fbOk:'Спасибо! Сообщение отправлено.',fbErr:'Не удалось отправить. Попробуй позже.',fbShort:'Напиши хотя бы пару слов.',fbHint:'Регистрация не нужна. Если на сообщение ответят, ответ появится здесь, на сайте, когда ты снова его откроешь (на этом же устройстве и в этом браузере).',fbReT:'Ответ на твоё сообщение',fbYou:'Твоё сообщение:',fbReOk:'Понятно',
   foot:'Учебные материалы для подготовки к экзаменам',menu:'Темы'},
  en:{home:'Home',notes:'Notes',prac:'Practice',quiz:'Quiz',cards:'Flashcards',gloss:'Glossary',show:'Show solution',hide:'Hide solution',
   learned:'Learned',mark:'Mark as learned',module:'Module',lecture:'Topic',progress:'Topics learned',topics:'topics',
@@ -43,7 +43,7 @@ const UI={
   know:'Got it',dont:'Repeat',flip:'tap to flip',dir1:'EN → RU',dir2:'RU → EN',shuffle:'Shuffle',restart:'Restart',
   left:'left',cardsDone:'All cards done!',cardsStat:'First try',noData:'No materials for this topic yet.',
   term:'Term',trans:'Translation',fb:'Found a mistake?',fbT:'Report a mistake',fbPh:'What is wrong? E.g. “Quiz, question 3 — wrong answer”',fbSend:'Send',fbCancel:'Cancel',
-  fbOk:'Thank you! Message sent.',fbErr:'Could not send. Try later.',fbShort:'Please write a few words.',
+  fbOk:'Thank you! Message sent.',fbErr:'Could not send. Try later.',fbShort:'Please write a few words.',fbHint:'No sign-up needed. If someone replies, the answer will appear here on the site next time you open it (on this device and browser).',fbReT:'Reply to your message',fbYou:'Your message:',fbReOk:'Got it',
   foot:'Study materials for exam preparation',menu:'Topics'}
 };
 const store={get(k,d){try{const v=localStorage.getItem(k);return v===null?d:JSON.parse(v)}catch(e){return d}},set(k,v){try{localStorage.setItem(k,JSON.stringify(v))}catch(e){}}};
@@ -263,9 +263,30 @@ function toast(msg){const t=document.createElement('div');t.className='toast';t.
   setTimeout(()=>{t.classList.remove('show');setTimeout(()=>t.remove(),400)},2600)}
 
 /* ---------- feedback (Supabase, insert-only) ---------- */
+function newTicket(){
+  if(crypto.randomUUID)return crypto.randomUUID();
+  const b=crypto.getRandomValues(new Uint8Array(16));b[6]=b[6]&15|64;b[8]=b[8]&63|128;
+  const h=[...b].map(x=>x.toString(16).padStart(2,'0')).join('');return h.slice(0,8)+'-'+h.slice(8,12)+'-'+h.slice(12,16)+'-'+h.slice(16,20)+'-'+h.slice(20);
+}
+/* ответы админа на сообщения из формы: спрашиваем по своим ticket, показываем новые */
+let fbChecked=0;
+async function checkReplies(){
+  const tickets=store.get('fbTickets',[]),cfg=window.SITE_CONFIG||{};
+  if(!tickets.length||!cfg.supabaseUrl||Date.now()-fbChecked<60000)return;fbChecked=Date.now();
+  try{const r=await fetch(cfg.supabaseUrl+'/rest/v1/rpc/feedback_replies',{method:'POST',headers:{'apikey':cfg.supabaseKey,'Content-Type':'application/json'},body:JSON.stringify({tickets})});
+    if(!r.ok)return;const seen=store.get('fbSeen',{}),fresh=(await r.json()).filter(x=>seen[x.id]!==x.replied_at);
+    if(!fresh.length)return;const dlg=$('#fbReDlg');if(dlg.open)return;
+    $('#fbReTitle').textContent=U().fbReT;$('#fbReOk').textContent=U().fbReOk;
+    $('#fbReList').replaceChildren(...fresh.map(x=>{const d=document.createElement('div'),q=document.createElement('div'),a=document.createElement('div');
+      q.className='q';q.textContent=U().fbYou+' '+x.message;a.className='a';a.textContent=x.reply;d.append(q,a);return d}));
+    dlg.onclose=()=>{const s=store.get('fbSeen',{});fresh.forEach(x=>s[x.id]=x.replied_at);store.set('fbSeen',s)};
+    dlg.showModal();
+  }catch(_){}
+}
 function initFeedback(){
+  checkReplies();document.addEventListener('visibilitychange',()=>{if(!document.hidden)checkReplies()});
   const dlg=$('#fbDlg'),u=()=>U();
-  $('#fbOpen').onclick=()=>{$('#fbTitle').textContent=u().fbT;$('#fbText').placeholder=u().fbPh;$('#fbSend').textContent=u().fbSend;$('#fbCancel').textContent=u().fbCancel;$('#fbSt').textContent='';dlg.showModal()};
+  $('#fbOpen').onclick=()=>{$('#fbTitle').textContent=u().fbT;$('#fbText').placeholder=u().fbPh;$('#fbSend').textContent=u().fbSend;$('#fbCancel').textContent=u().fbCancel;$('#fbHint').textContent=u().fbHint;$('#fbSt').textContent='';dlg.showModal()};
   $('#fbCancel').onclick=()=>dlg.close();
   $('#fbForm').onsubmit=async e=>{
     e.preventDefault();const st=$('#fbSt');const text=$('#fbText').value.trim();
@@ -274,9 +295,11 @@ function initFeedback(){
     const last=store.get('fbLast',0);if(Date.now()-last<30000){st.textContent=u().fbErr;st.style.color='var(--bad)';return}
     const cfg=window.SITE_CONFIG||{};if(!cfg.supabaseUrl||!cfg.supabaseKey){st.textContent=u().fbErr;return}
     $('#fbSend').disabled=true;
+    // ticket — случайный секрет этого браузера: по нему потом можно получить ответ, без регистрации
+    const ticket=newTicket();
     try{const r=await fetch(cfg.supabaseUrl+'/rest/v1/feedback',{method:'POST',headers:{'apikey':cfg.supabaseKey,'Content-Type':'application/json','Prefer':'return=minimal'},
-        body:JSON.stringify({page:location.hash.slice(0,200)||'#/',message:text.slice(0,2000)})});
-      if(!r.ok)throw 0;store.set('fbLast',Date.now());$('#fbText').value='';dlg.close();toast(u().fbOk)}
+        body:JSON.stringify({page:location.hash.slice(0,200)||'#/',message:text.slice(0,2000),ticket})});
+      if(!r.ok)throw 0;store.set('fbTickets',[ticket,...store.get('fbTickets',[])].slice(0,50));store.set('fbLast',Date.now());$('#fbText').value='';dlg.close();toast(u().fbOk)}
     catch(_){st.textContent=u().fbErr;st.style.color='var(--bad)'}finally{$('#fbSend').disabled=false}
   };
 }

@@ -12,7 +12,7 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Unbounded:wght@500;700&family=Onest:wght@400;500;600;700&family=JetBrains+Mono:wght@400;600&display=swap" rel="stylesheet">
-<link rel="stylesheet" href="assets/app.css?v=4">
+<link rel="stylesheet" href="assets/app.css?v=5">
 <script src="assets/mathjax-config.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/mathjax@3.2.2/es5/tex-svg.js" integrity="sha384-KKWa9jJ1MZvssLeOoXG6FiOAZfAgmzsIIfw8BXwI9+kYm0lPCbC6yTQPBC00F1/L" crossorigin="anonymous" defer></script>
 </head>
@@ -42,14 +42,23 @@
     <h3 id="fbTitle"></h3>
     <textarea id="fbText" rows="5" maxlength="2000" required></textarea>
     <input id="fbHp" class="hp" tabindex="-1" autocomplete="off" aria-hidden="true">
+    <p class="fb-hint" id="fbHint"></p>
     <div class="st" id="fbSt" role="status"></div>
     <div class="row"><button class="btn ghost" type="button" id="fbCancel"></button><button class="btn primary" type="submit" id="fbSend"></button></div>
+  </form>
+</dialog>
+
+<dialog class="fb" id="fbReDlg">
+  <form method="dialog">
+    <h3 id="fbReTitle"></h3>
+    <div id="fbReList" class="fb-re"></div>
+    <div class="row"><button class="btn primary" type="submit" id="fbReOk"></button></div>
   </form>
 </dialog>
 
 <script src="config.js"></script>
 <script src="assets/errlog.js?v=2"></script>
 <script src="content.js"></script>
-<script src="assets/app.js?v=5"></script>
+<script src="assets/app.js?v=6"></script>
 </body>
 </html>

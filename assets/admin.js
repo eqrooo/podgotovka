@@ -146,12 +146,25 @@ function renderRows(list,rows){
       el('div',{class:'msg'},r.message),
       r.stack?el('pre',null,r.stack):null,
       r.ua?el('div',{class:'meta'},r.ua):null,
+      tab==='feedback'?replyBox(r):null,
       el('div',{class:'acts'},
         el('button',{class:'btn ghost sm',on:{click:async()=>{await act(()=>api(tab+'?id=eq.'+r.id,{method:'PATCH',body:JSON.stringify({resolved:!r.resolved})}))}}},r.resolved?'Вернуть':'Решено'),
         el('button',{class:'btn ghost sm',on:{click:async()=>{if(confirm('Удалить запись навсегда?'))await act(()=>api(tab+'?id=eq.'+r.id,{method:'DELETE'}))}}},'Удалить')
       ));
     return card;
   }));
+}
+/* ответ автору: он увидит его на сайте (браузер автора хранит секретный ticket сообщения) */
+function replyBox(r){
+  if(!r.ticket)return el('div',{class:'meta'},'Ответить нельзя: сообщение отправлено старой версией сайта');
+  const box=el('div',{class:'adm-reply'});
+  const ta=el('textarea',{rows:3,maxLength:2000,placeholder:'Ответ автору — он увидит его на сайте',value:r.reply||''});
+  const btn=el('button',{class:'btn primary sm',type:'button'},r.reply?'Изменить ответ':'Ответить');
+  btn.onclick=async()=>{const t=ta.value.trim();if(!t)return;btn.disabled=true;
+    await act(()=>api('feedback?id=eq.'+r.id,{method:'PATCH',body:JSON.stringify({reply:t,replied_at:new Date().toISOString(),replied_by:sess.email,resolved:true})}));
+    btn.disabled=false};
+  if(r.reply)box.append(el('div',{class:'meta'},'Отвечено '+fmt(r.replied_at)+(r.replied_by?' · '+r.replied_by:'')));
+  box.append(ta,btn);return box;
 }
 function renderAdmins(list,rows){
   list.replaceChildren(...rows.map(r=>el('div',{class:'adm-item'},
