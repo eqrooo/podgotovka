@@ -313,7 +313,13 @@ function boot(){
 /* load content scripts listed in manifest sequentially, then boot */
 (async function load(){
   // параллельная загрузка, исполнение по порядку (async=false)
-  await Promise.all((window.CONTENT||[]).map(src=>new Promise(res=>{const s=document.createElement('script');s.src=src;s.async=false;s.onload=res;s.onerror=()=>{console.warn('fail',src);res()};document.head.appendChild(s)})));
+  // data-l: ошибки этих файлов errlog не отправляет сам — сообщаем только если не помогли повторы
+  const add=(src,async)=>new Promise(res=>{const s=document.createElement('script');s.src=src;s.async=async;s.dataset.l='1';s.onload=()=>res(true);s.onerror=()=>{s.remove();res(false)};document.head.appendChild(s)});
+  const list=window.CONTENT||[],ok=await Promise.all(list.map(src=>add(src,false)));
+  // мобильный интернет иногда обрывает один из файлов — пробуем ещё дважды, по порядку
+  for(let i=0;i<list.length;i++){if(ok[i])continue;let good=false;
+    for(let k=1;k<=2&&!good;k++){await new Promise(r=>setTimeout(r,800*k));good=await add(list[i]+(list[i].includes('?')?'&':'?')+'r='+k,true)}
+    if(!good){console.warn('fail',list[i]);if(window.reportError2)window.reportError2('Не загрузился файл (после 3 попыток): '+location.origin+location.pathname.replace(/[^/]*$/,'')+list[i],navigator.onLine===false?'offline':'')}}
   boot();
 })();
 })();

@@ -14,6 +14,8 @@
   window.addEventListener('error',function(e){
     // ресурсы (картинки/скрипты не загрузились)
     if(e.target&&e.target!==window&&(e.target.src||e.target.href)){
+      if(e.target.dataset&&e.target.dataset.l)return; // файлы контента: app.js сам повторит загрузку и сообщит при неудаче
+      if(navigator.onLine===false)return;
       var u=e.target.src||e.target.href;
       if(String(u).indexOf(location.origin)===0)send('Не загрузился файл: '+u,'');
       return;
