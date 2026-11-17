@@ -1,0 +1,64 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Админка · Подготовка</title>
+<meta name="robots" content="noindex,nofollow">
+<meta name="theme-color" content="#0a2463">
+<meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self'; style-src 'self' https://fonts.googleapis.com; font-src https://fonts.gstatic.com; img-src 'self' data:; connect-src https://*.supabase.co; object-src 'none'; base-uri 'self'; form-action 'self'">
+<meta name="referrer" content="no-referrer">
+<link href="https://fonts.googleapis.com/css2?family=Unbounded:wght@500;700&family=Onest:wght@400;500;600;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="assets/app.css?v=4">
+<link rel="stylesheet" href="assets/admin.css?v=1">
+</head>
+<body class="adm">
+<header class="top">
+  <a class="brand" href="./"><span class="logo">∑</span><span>Подготовка</span></a>
+  <span class="adm-badge">админка</span>
+  <span class="adm-user" id="who"></span>
+  <button class="btn ghost sm" id="logout" hidden>Выйти</button>
+</header>
+
+<main class="adm-main">
+  <section class="adm-card" id="login" hidden>
+    <h1>Вход в админку</h1>
+    <p class="muted">Введи email. Придёт письмо со ссылкой для входа (и, возможно, кодом).</p>
+    <form id="loginForm" class="adm-form">
+      <input type="email" id="email" placeholder="you@example.com" required autocomplete="email">
+      <button class="btn primary" type="submit" id="sendLink">Получить ссылку</button>
+    </form>
+    <form id="codeForm" class="adm-form" hidden>
+      <input type="text" id="code" placeholder="Код из письма" inputmode="numeric" autocomplete="one-time-code" maxlength="10">
+      <button class="btn primary" type="submit">Войти по коду</button>
+    </form>
+    <div class="st" id="loginSt" role="status"></div>
+  </section>
+
+  <section class="adm-card" id="denied" hidden>
+    <h1>Нет доступа</h1>
+    <p class="muted">Этот аккаунт не добавлен в администраторы. Попроси владельца сайта добавить твой email.</p>
+  </section>
+
+  <section id="panel" hidden>
+    <nav class="adm-tabs" role="tablist">
+      <button data-tab="feedback" class="on">Сообщения <span class="cnt" id="cnt-feedback"></span></button>
+      <button data-tab="errors">Ошибки <span class="cnt" id="cnt-errors"></span></button>
+      <button data-tab="admins">Админы</button>
+    </nav>
+    <div class="adm-bar">
+      <label><input type="checkbox" id="showResolved"> показывать решённые</label>
+      <button class="btn ghost sm" id="reload">Обновить</button>
+    </div>
+    <div id="list" class="adm-list"></div>
+    <form id="addAdmin" class="adm-form" hidden>
+      <input type="email" id="newAdmin" placeholder="email нового админа" required>
+      <button class="btn primary" type="submit">Добавить</button>
+    </form>
+  </section>
+</main>
+
+<script src="config.js"></script>
+<script src="assets/admin.js?v=1"></script>
+</body>
+</html>
