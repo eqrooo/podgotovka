@@ -9,6 +9,7 @@ for(const d of dirs){
   const fsx=fs.readdirSync(path.join(root,d)).filter(f=>f.endsWith('.js')&&f!=='subject.js'&&f!=='quiz.js').sort();
   files.push(`${d}/subject.js`,...fsx.map(f=>`${d}/${f}`));
   if(fs.existsSync(path.join(root,d,'quiz.js')))files.push(`${d}/quiz.js`);
+  const en=path.join(root,d,'en');if(fs.existsSync(en))files.push(...fs.readdirSync(en).filter(f=>f.endsWith('.js')).sort().map(f=>`${d}/en/${f}`));
 }
 const v=Date.now().toString(36);
 fs.writeFileSync(path.join(root,'content.js'),'window.CONTENT='+JSON.stringify(files.map(f=>f+'?v='+v),null,0)+';\n');

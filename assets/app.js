@@ -5,6 +5,14 @@ window.SUBJECTS=[];window.TOPICS={};
 window.registerSubject=function(s){SUBJECTS.push(s);TOPICS[s.id]=TOPICS[s.id]||[];};
 window.registerTopic=function(t){(TOPICS[t.subject]=TOPICS[t.subject]||[]).push(t);};
 window.addQuiz=function(subj,id,items){const t=(TOPICS[subj]||[]).find(x=>x.id===id);if(t)t.quiz=(t.quiz||[]).concat(items);};
+/* английский перевод темы: addEn('econ','t01',{title,summary,body,practice:[{q,a}],quiz:[{q,options,solution}]}) — по индексам */
+function setEn(o,k,v){if(v==null||v==='')return;const c=o[k];if(c==null)return;if(typeof c==='string')o[k]={ru:c,en:v};else c.en=v}
+window.addEn=function(subj,id,d){const t=(TOPICS[subj]||[]).find(x=>x.id===id);if(!t)return;
+  ['title','summary','body'].forEach(k=>setEn(t,k,d[k]));
+  (d.practice||[]).forEach((p,i)=>{const o=(t.practice||[])[i];if(o&&p){setEn(o,'q',p.q);setEn(o,'a',p.a)}});
+  (d.quiz||[]).forEach((q,i)=>{const o=(t.quiz||[])[i];if(!o||!q)return;setEn(o,'q',q.q);setEn(o,'solution',q.solution);
+    (q.options||[]).forEach((v,j)=>{if(o.options[j]!=null&&v!=null&&v!==L0(o.options[j]))setEn(o.options,j,v)})});};
+const L0=o=>typeof o==='string'?o:(o&&o.ru);
 
 const UI={
  ru:{home:'Главная',notes:'Конспект',prac:'Задания',quiz:'Тест',cards:'Карточки',gloss:'Словарь',show:'Показать решение',hide:'Скрыть решение',
@@ -14,7 +22,7 @@ const UI={
   statSubj:'предметов',statTopics:'тем',statQ:'вопросов в тестах',statW:'слов в карточках',choose:'Выбери предмет',
   f1:['📘','Конспекты','Структурированная теория с примерами и типичными ошибками.'],f2:['✍️','Задания','Новые задачи с пошаговыми решениями под спойлером.'],
   f3:['🎯','Тесты','Выбор ответа, мгновенная проверка и разбор каждого вопроса.'],f4:['🃏','Карточки','Учи термины: переворачивай, отмечай, повторяй трудные.'],
-  allCards:'Все карточки предмета',exam:'Итоговый тест (20 вопросов)',q:'Вопрос',of:'из',next:'Дальше',finish:'Результат',
+  allCards:'Все карточки предмета',exam:'Итоговый тест по предмету',modTest:'Тест по модулю',topicTest:'Тест по теме',qs:'вопр.',q:'Вопрос',of:'из',next:'Дальше',finish:'Результат',
   right:'Верно!',wrong:'Неверно',again:'Пройти ещё раз',best:'Лучший результат',solution:'Решение',
   res:[[90,'Отлично! Ты готов(а) 🎉'],[70,'Хорошо! Повтори пару тем'],[50,'Неплохо, но стоит повторить'],[0,'Перечитай конспект и попробуй снова']],
   know:'Знаю',dont:'Повторить',flip:'нажми, чтобы перевернуть',dir1:'EN → RU',dir2:'RU → EN',shuffle:'Перемешать',restart:'Сначала',
@@ -29,7 +37,7 @@ const UI={
   statSubj:'subjects',statTopics:'topics',statQ:'quiz questions',statW:'flashcard terms',choose:'Pick a subject',
   f1:['📘','Notes','Structured theory with examples and common mistakes.'],f2:['✍️','Practice','New problems with step-by-step hidden solutions.'],
   f3:['🎯','Quizzes','Multiple choice, instant feedback and a worked solution for each.'],f4:['🃏','Flashcards','Learn terms: flip, mark, repeat the hard ones.'],
-  allCards:'All subject flashcards',exam:'Final quiz (20 questions)',q:'Question',of:'of',next:'Next',finish:'Results',
+  allCards:'All subject flashcards',exam:'Final subject quiz',modTest:'Module quiz',topicTest:'Topic quiz',qs:'q.',q:'Question',of:'of',next:'Next',finish:'Results',
   right:'Correct!',wrong:'Wrong',again:'Try again',best:'Best score',solution:'Solution',
   res:[[90,'Excellent! You are ready 🎉'],[70,'Good! Review a couple of topics'],[50,'Not bad, but review more'],[0,'Re-read the notes and try again']],
   know:'Got it',dont:'Repeat',flip:'tap to flip',dir1:'EN → RU',dir2:'RU → EN',shuffle:'Shuffle',restart:'Restart',
@@ -76,9 +84,10 @@ function renderTop(){
   const add=(txt,path)=>{if(c.children.length){const s=document.createElement('span');s.className='sep';s.textContent='/';c.appendChild(s)}
     const b=document.createElement('button');b.textContent=txt;b.onclick=()=>go(path);c.appendChild(b)};
   if(route.s){const s=subj(route.s);add(L(s.title),s.id);
-    if(route.t&&!['cards','exam'].includes(route.t)){const t=topicsOf(s.id).find(x=>x.id===route.t);if(t)add(L(t.title),s.id+'/'+t.id)}
+    if(/^m\d+$/.test(route.t||'')){const m=s.modules.find(x=>'m'+x.n===route.t);if(m)add(U().modTest+' '+m.n,s.id+'/'+route.t)}
+    else if(route.t&&!['cards','exam'].includes(route.t)){const t=topicsOf(s.id).find(x=>x.id===route.t);if(t)add(L(t.title),s.id+'/'+t.id)}
     else if(route.t==='cards')add(U().cards,s.id+'/cards');else if(route.t==='exam')add(U().quiz,s.id+'/exam');}
-  const s=subj(route.s);$('#lang').hidden=!hasEn(s);
+  const s=subj(route.s);$('#lang').hidden=route.s?!hasEn(s):false;
   $('#lang-ru').setAttribute('aria-pressed',lang==='ru');$('#lang-en').setAttribute('aria-pressed',lang==='en');
   $('#menuBtn').hidden=!route.s;
   $('#fbOpen').textContent=U().fb;
@@ -113,7 +122,7 @@ function renderSide(s){
   side.innerHTML=`<div class="sh"><span class="ic">${s.icon||'📚'}</span><b>${L(s.title)}</b></div>
    <div class="prog">${u.progress}: <b>${n} / ${ts.length}</b><div class="bar"><i data-w="${ts.length?n/ts.length*100:0}"></i></div></div>
    <div class="tools"><button data-go="${s.id}/cards">🃏 ${u.allCards}</button><button data-go="${s.id}/exam">🎯 ${u.exam}</button></div>
-   ${s.modules.map(m=>{const mt=ts.filter(t=>t.module===m.n);if(!mt.length)return '';return `<h3>${u.module} ${m.n} · ${L(m.title)}</h3>`+mt.map(t=>
+   ${s.modules.map(m=>{const mt=ts.filter(t=>t.module===m.n);if(!mt.length)return '';return `<h3>${u.module} ${m.n} · ${L(m.title)}</h3><button class="mtest" data-go="${s.id}/m${m.n}" aria-current="${route.t==='m'+m.n}">🎯 ${u.modTest}</button>`+mt.map(t=>
      `<button class="tlink" data-go="${s.id}/${t.id}" aria-current="${t.id===route.t}"><span class="n">${String(t.num).padStart(2,'0')}</span><span>${L(t.title)}</span><span class="ok ${done[s.id+'/'+t.id]?'done':''}"></span></button>`).join('')}).join('')}`;
   side.querySelectorAll('[data-go]').forEach(b=>b.onclick=()=>{go(b.dataset.go);document.body.classList.remove('menu-open')});
   requestAnimationFrame(()=>side.querySelectorAll('.bar i').forEach(i=>i.style.width=i.dataset.w+'%'));
@@ -123,7 +132,7 @@ function renderSubject(v,s){
   v.innerHTML=`<div class="eyebrow"><span>${ts.length} ${u.topics}</span></div><h1>${L(s.title)}</h1><p class="lead">${L(s.meta)}</p>
    <div class="actions-row"><button class="btn primary" data-go="${s.id}/cards">🃏 ${u.allCards}</button><button class="btn ghost" data-go="${s.id}/exam">🎯 ${u.exam}</button></div>
    <div class="mods stagger">${s.modules.map(m=>{const mt=ts.filter(t=>t.module===m.n);if(!mt.length)return '';return `<div class="mod"><h4>${u.module} ${m.n}. ${L(m.title)}</h4>${mt.map(t=>
-     `<button data-go="${s.id}/${t.id}"><span class="n">${String(t.num).padStart(2,'0')}</span><span>${L(t.title)}${done[s.id+'/'+t.id]?' ✓':''}</span></button>`).join('')}</div>`}).join('')}</div>`;
+     `<div class="trow"><button data-go="${s.id}/${t.id}"><span class="n">${String(t.num).padStart(2,'0')}</span><span>${L(t.title)}${done[s.id+'/'+t.id]?' ✓':''}</span></button>${(t.quiz||[]).length?`<button class="qbtn" data-go="${s.id}/${t.id}/quiz" title="${u.topicTest}">🎯 ${t.quiz.length}</button>`:''}</div>`).join('')}<button class="btn ghost mbtn" data-go="${s.id}/m${m.n}">🎯 ${u.modTest} · ${mt.reduce((a,t)=>a+(t.quiz||[]).length,0)} ${u.qs}</button></div>`}).join('')}</div>`;
   v.querySelectorAll('[data-go]').forEach(b=>b.onclick=()=>go(b.dataset.go));
 }
 
@@ -197,7 +206,7 @@ function renderQuiz(body,items,key,isExam){
      <button class="btn primary" id="again">↻ ${u.again}</button>
      <div class="review">${log.map((r,j)=>`<div class="ri"><b style="color:${r.ok?'var(--good)':'var(--bad)'}">${r.ok?'✓':'✗'}</b><div>${j+1}. ${L(r.q.q)}${r.ok?'':`<div class="a" style="margin:8px 0 0;padding:10px 14px;border-radius:10px;background:var(--bg-soft)"><b>${L(r.q.options[r.q.answer])}</b> — ${L(r.q.solution)}</div>`}</div></div>`).join('')}</div></div>`;
     body.querySelectorAll('[data-count]').forEach(countUp);
-    $('#again').onclick=()=>renderQuiz(body,isExam?examItems(route.s):items,key,isExam);
+    $('#again').onclick=()=>renderQuiz(body,isExam?isExam():items,key,isExam);
     if(pct>=70)confetti();typeset(body);window.scrollTo({top:0,behavior:'smooth'});
   }
   show();
@@ -283,7 +292,9 @@ function render(){
   if(!route.t)renderSubject(v,s);
   else if(route.t==='cards'){v.innerHTML=`<div class="eyebrow"><span>${L(s.title)}</span></div><h1>🃏 ${U().allCards}</h1><div id="tbody"></div>`;
     renderCards($('#tbody'),topicsOf(s.id).flatMap(t=>(t.glossary||[]).map(g=>({g,src:t.num+'. '+L(t.title).slice(0,40)}))),s.id+'/cards')}
-  else if(route.t==='exam'){v.innerHTML=`<div class="eyebrow"><span>${L(s.title)}</span></div><h1>🎯 ${U().exam}</h1><div id="tbody"></div>`;renderQuiz($('#tbody'),examItems(s.id),s.id+'/exam',true)}
+  else if(route.t==='exam'){v.innerHTML=`<div class="eyebrow"><span>${L(s.title)}</span></div><h1>🎯 ${U().exam}</h1><div id="tbody"></div>`;renderQuiz($('#tbody'),examItems(s.id),s.id+'/exam',()=>examItems(s.id))}
+  else if(/^m\d+$/.test(route.t)){const m=s.modules.find(x=>'m'+x.n===route.t);const gen=()=>shuffle(topicsOf(s.id).filter(t=>t.module===(m&&m.n)).flatMap(t=>t.quiz||[])).slice(0,25);
+    v.innerHTML=`<div class="eyebrow"><span>${U().module} ${m?m.n:''}</span></div><h1>🎯 ${U().modTest}${m?': '+L(m.title):''}</h1><div id="tbody"></div>`;renderQuiz($('#tbody'),gen(),s.id+'/'+route.t,gen)}
   else{const t=topicsOf(s.id).find(x=>x.id===route.t);if(t)renderTopic(v,s,t);else renderSubject(v,s)}
   v.classList.remove('page-enter');void v.offsetWidth;v.classList.add('page-enter');
   typeset(v);

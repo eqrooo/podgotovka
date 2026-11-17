@@ -3,6 +3,7 @@ registerSubject({
   title:{ru:'Информатика', en:'Informatics'},
   meta:{ru:'Информационные системы и общество, системный анализ, количество информации, системы счисления, алгебра логики и предикаты', en:'Information systems and society, system analysis, amount of information, number systems, logic algebra and predicates'},
   icon:'💻',
+  langs:['ru','en'],
   modules:[
     {n:1,title:{ru:'Информационные системы и общество',en:'Information systems and society'}},
     {n:2,title:{ru:'Информация и системы счисления',en:'Information and number systems'}},

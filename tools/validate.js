@@ -5,6 +5,13 @@ vm.runInContext(fs.readFileSync(path.join(root,'content.js'),'utf8'),ctx);
 const S=[],T={};ctx.registerSubject=s=>{S.push(s);T[s.id]=T[s.id]||[]};ctx.registerTopic=t=>(T[t.subject]=T[t.subject]||[]).push(t);
 ctx.addQuiz=(s,id,it)=>{const t=T[s].find(x=>x.id===id);if(!t)throw Error('no topic '+id);t.quiz=(t.quiz||[]).concat(it)};
 let err=0;const bad=m=>{err++;console.log('✗',m)};
+const enSeen={};
+ctx.addEn=(s,id,d)=>{const t=(T[s]||[]).find(x=>x.id===id);const k=s+'/'+id;if(!t){bad('addEn: no topic '+k);return}enSeen[k]=1;
+ for(const f of ['title','summary','body'])if(!d[f])bad(k+' en: no '+f);
+ if((d.practice||[]).length!==(t.practice||[]).length)bad(`${k} en: practice ${(d.practice||[]).length} != ${(t.practice||[]).length}`);
+ if((d.quiz||[]).length!==(t.quiz||[]).length)bad(`${k} en: quiz ${(d.quiz||[]).length} != ${(t.quiz||[]).length}`);
+ (d.practice||[]).forEach((p,i)=>{if(!p||!p.q||!p.a)bad(`${k} en: practice ${i+1} empty`)});
+ (d.quiz||[]).forEach((q,i)=>{if(!q||!q.q||!q.solution||!Array.isArray(q.options)||q.options.length!==4)bad(`${k} en: quiz ${i+1} incomplete`)});};
 for(const f of ctx.CONTENT){vm.runInContext(fs.readFileSync(path.join(root,f.split('?')[0]),'utf8'),ctx,{filename:f})}
 let tot={t:0,q:0,p:0,g:0};
 for(const s of S){const ts=T[s.id];const ids=new Set();
@@ -21,4 +28,6 @@ for(const s of S){const ts=T[s.id];const ids=new Set();
  const pos=[0,0,0,0];ts.forEach(t=>(t.quiz||[]).forEach(q=>pos[q.answer]++));
  console.log(s.id.padEnd(5),ts.length,'topics, answer positions',pos.join('/'));
 }
+const noEn=[];for(const s of S)if((s.langs||[]).includes('en')&&s.id!=='hm')for(const t of T[s.id])if(!enSeen[s.id+'/'+t.id])noEn.push(s.id+'/'+t.id);
+if(noEn.length)console.log('без перевода:',noEn.length,noEn.join(' '));
 console.log(tot,err?err+' errors':'OK');process.exit(err?1:0);
