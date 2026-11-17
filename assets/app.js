@@ -146,7 +146,7 @@ function renderTopic(v,s,t){
    <h1>${L(t.title)}</h1><p class="lead">${L(t.summary)}</p>
    <div class="tabs" role="tablist">${tabs.map(([id,lab,c])=>`<button class="tab" role="tab" data-tab="${id}" aria-selected="${route.tab===id}">${lab}${c!=null?`<span class="c">${c}</span>`:''}</button>`).join('')}
    <span class="ind"></span><button class="done-btn ${done[key]?'on':''}" id="doneBtn">${done[key]?'✓ '+u.learned:u.mark}</button></div><div id="tbody" class="page-enter"></div>`;
-  v.querySelectorAll('.tab').forEach(b=>b.onclick=()=>{history.replaceState(null,'','#/'+key+'/'+b.dataset.tab);route.tab=b.dataset.tab;renderTopic(v,s,t)});
+  v.querySelectorAll('.tab').forEach(b=>b.onclick=()=>{history.replaceState(null,'','#/'+key+'/'+b.dataset.tab);route.tab=b.dataset.tab;trackView();renderTopic(v,s,t)});
   moveInd();
   $('#doneBtn').onclick=e=>{done[key]=!done[key];store.set('done',done);const b=e.currentTarget;b.classList.toggle('on',done[key]);b.textContent=done[key]?'✓ '+u.learned:u.mark;
     b.classList.remove('pop');void b.offsetWidth;b.classList.add('pop');if(done[key])confetti(b);renderSide(s)};
@@ -304,9 +304,53 @@ function initFeedback(){
   };
 }
 
+/* ---------- анонимная статистика: какие страницы открывают и сколько времени на них проводят ----------
+   Без IP/email/cookies: случайный id браузера, id вкладки и id просмотра. Время считается только пока вкладка видна. */
+const trk=(()=>{
+  const cfg=window.SITE_CONFIG||{},off=!cfg.supabaseUrl||/^(localhost|127\.0\.0\.1)$/.test(location.hostname)&&!/[?&]track=1/.test(location.search);
+  const id=()=>newTicket();
+  let vid=store.get('vid',null);if(!vid){vid=id();store.set('vid',vid)}
+  let sid;try{sid=sessionStorage.getItem('sid');if(!sid){sid=id();sessionStorage.setItem('sid',sid)}}catch(_){sid=id()}
+  const mobile=matchMedia('(max-width: 760px)').matches||/Mobi|Android/i.test(navigator.userAgent);
+  let cur=null;
+  function send(final){
+    if(!cur||off)return;
+    if(cur.start!=null){cur.acc+=Date.now()-cur.start;cur.start=final?null:Date.now()}
+    const sec=Math.min(1800,Math.round(cur.acc/1000));
+    if(cur.sent&&sec<1)return;          // повторно отправляем только если накопилось время
+    cur.acc=0;cur.sent=true;
+    try{fetch(cfg.supabaseUrl+'/rest/v1/visits',{method:'POST',keepalive:true,
+      headers:{'apikey':cfg.supabaseKey,'Content-Type':'application/json','Prefer':'return=minimal'},
+      body:JSON.stringify({vid,sid,pv:cur.pv,path:cur.path,title:cur.title.slice(0,160),lang:curLang()==='en'?'en':'ru',mobile,seconds:sec})}).catch(()=>{})}catch(_){}
+  }
+  document.addEventListener('visibilitychange',()=>{if(!cur)return;if(document.hidden)send(true);else cur.start=Date.now()});
+  addEventListener('pagehide',()=>send(true));
+  // при уходе со страницы сначала отправляем время, потом начинаем новый просмотр
+  return function view(path,title){
+    if(cur&&cur.path===path)return;
+    if(cur)send(true);
+    cur={pv:id(),path,title,acc:0,start:document.hidden?null:Date.now(),sent:false};
+    setTimeout(()=>{if(cur&&!cur.sent&&cur.path===path)send(false)},5000); // сам просмотр засчитываем через 5 с
+  };
+})();
+const ru=o=>o==null?'':typeof o==='string'?o:(o.ru||o.en||'');
+function trackView(){
+  try{
+    if(!route.s)return trk('home','Главная');
+    const s=subj(route.s),st=ru(s.title);
+    if(!route.t)return trk(s.id,st);
+    if(route.t==='exam')return trk(s.id+'/exam',st+' · Тест по предмету');
+    if(route.t==='cards')return trk(s.id+'/cards',st+' · Все карточки');
+    if(/^m\d+$/.test(route.t))return trk(s.id+'/'+route.t,st+' · Тест модуля '+route.t.slice(1));
+    const t=topicsOf(s.id).find(x=>x.id===route.t);if(!t)return trk(s.id,st);
+    const tab=route.tab||'notes',tl={notes:'Конспект',prac:'Задания',quiz:'Тест',cards:'Карточки',gloss:'Словарь'}[tab]||tab;
+    trk(s.id+'/'+t.id+'/'+tab,st+' · '+t.num+'. '+ru(t.title).slice(0,90)+' — '+tl);
+  }catch(_){}
+}
+
 /* ---------- render ---------- */
 function render(){
-  route=parse();
+  route=parse();trackView();
   renderTop();cardKeys=null;
   const v=$('#view'),shell=$('#shell');
   if(!route.s){shell.classList.remove('on');$('#home').hidden=false;shell.hidden=true;renderHome($('#home'));$('#home').classList.remove('page-enter');void $('#home').offsetWidth;$('#home').classList.add('page-enter');observe($('#home'));return}

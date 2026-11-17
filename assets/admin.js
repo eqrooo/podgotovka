@@ -6,7 +6,7 @@ const $=s=>document.querySelector(s);
 const SK='adm_sess';
 let sess=null,tab='feedback';
 
-function el(tag,props,...kids){const e=document.createElement(tag);if(props)for(const k in props){if(k==='class')e.className=props[k];else if(k==='on')for(const ev in props.on)e.addEventListener(ev,props.on[ev]);else e[k]=props[k]}
+function el(tag,props,...kids){const e=document.createElement(tag);if(props)for(const k in props){if(k==='class')e.className=props[k];else if(k==='style')e.style.cssText=props[k];else if(k==='on')for(const ev in props.on)e.addEventListener(ev,props.on[ev]);else e[k]=props[k]}
   for(const c of kids){if(c==null)continue;e.append(c instanceof Node?c:document.createTextNode(String(c)))}return e}
 function show(id){for(const x of ['login','denied','panel'])$('#'+x).hidden=x!==id;$('#logout').hidden=id==='login';$('#who').textContent=sess?sess.email:''}
 function status(msg,kind){const s=$('#loginSt');s.textContent=msg;s.className='st '+(kind||'')}
@@ -130,9 +130,10 @@ async function counts(){
 async function refresh(){
   const list=$('#list');list.replaceChildren(el('div',{class:'adm-empty'},'Загрузка…'));
   $('#adminTools').hidden=tab!=='admins';
-  $('.adm-bar label').hidden=tab==='admins';
+  $('.adm-bar label').hidden=tab==='admins'||tab==='stats';
   try{
     if(tab==='admins')return renderAdmins(list,await api('admins?select=*&order=created_at'));
+    if(tab==='stats')return renderStats(list,await api('rpc/site_stats',{method:'POST',body:JSON.stringify({days:statDays})}));
     const f=$('#showResolved').checked?'':'&resolved=eq.false';
     const rows=await api(tab+'?select=*&order=created_at.desc&limit=200'+f);
     renderRows(list,rows);counts();
@@ -165,6 +166,48 @@ function replyBox(r){
     btn.disabled=false};
   if(r.reply)box.append(el('div',{class:'meta'},'Отвечено '+fmt(r.replied_at)+(r.replied_by?' · '+r.replied_by:'')));
   box.append(ta,btn);return box;
+}
+/* ----- статистика ----- */
+let statDays=7;
+const KIND={home:'Главная',subject:'Страница предмета',notes:'Конспект',prac:'Задачи',quiz:'Тест по теме',cards:'Карточки по теме',gloss:'Словарь',glossary:'Словарь',module:'Тест модуля',exam:'Тест по предмету',allcards:'Все карточки предмета'};
+function dur(sec){sec=Math.round(+sec||0);if(sec<60)return sec+' с';const m=Math.floor(sec/60);if(m<60)return m+' мин'+(sec%60&&m<10?' '+sec%60+' с':'');const h=Math.floor(m/60);return h+' ч '+(m%60)+' мин'}
+function table(head,rows){
+  return el('div',{class:'st-tw'},el('table',{class:'st-table'},
+    el('thead',null,el('tr',null,...head.map(h=>el('th',null,h)))),
+    el('tbody',null,...rows.map(r=>el('tr',null,...r.map(c=>el('td',null,c)))))));
+}
+function bar(v,max){const w=max?Math.max(2,Math.round(v/max*100)):0;return el('div',{class:'st-bar'},el('span',{style:'width:'+w+'%'}),el('b',null,String(v)))}
+function renderStats(list,d){
+  const per=el('div',{class:'st-per'},...[[1,'Сегодня'],[7,'7 дней'],[30,'30 дней'],[90,'90 дней'],[365,'Год']].map(([n,t])=>
+    el('button',{class:'btn sm '+(statDays===n?'primary':'ghost'),on:{click:()=>{statDays=n;refresh()}}},t)));
+  const kpi=(v,t,sub)=>el('div',{class:'st-kpi'},el('b',null,String(v)),el('span',null,t),sub?el('small',null,sub):null);
+  const dev=d.device||{},lng=d.lang||{};
+  const kpis=el('div',{class:'st-kpis'},
+    kpi(d.online,'сейчас на сайте','за последние 5 минут'),
+    kpi(d.visitors,'посетителей',d.new_visitors+' новых'),
+    kpi(d.sessions,'заходов',(d.avg_views_per_session||0)+' стр. за заход'),
+    kpi(d.views,'просмотров страниц'),
+    kpi(dur(d.avg_session_sec),'среднее время за заход'),
+    kpi(dur(d.total_sec),'всего времени на сайте'));
+  const daily=d.daily||[],mx=Math.max(1,...daily.map(x=>x.visitors));
+  const days=el('div',{class:'st-days'},...daily.slice(-60).map(x=>el('div',{class:'st-day',title:x.day+': '+x.visitors+' чел., '+x.views+' просм., '+dur(x.sec)},
+    el('span',{style:'height:'+Math.round(x.visitors/mx*100)+'%'}),el('i',null,x.day.slice(8)))));
+  const subs=d.subjects||[],ms=Math.max(1,...subs.map(x=>x.views));
+  const secs=d.sections||[],mk=Math.max(1,...secs.map(x=>x.views));
+  const pages=d.pages||[];
+  const empty=!d.views;
+  list.replaceChildren(per,kpis,
+    empty?el('div',{class:'adm-empty'},'Пока нет данных за этот период. Статистика собирается с момента обновления сайта.'):el('div',null,
+    el('h3',{class:'st-h'},'Посетители по дням'),days,
+    el('h3',{class:'st-h'},'Предметы — что открывают чаще'),
+    table(['Предмет','Просмотры','Людей','Время'],subs.map(x=>[x.title||x.subject,bar(x.views,ms),String(x.visitors),dur(x.total_sec)])),
+    el('h3',{class:'st-h'},'Что выбирают внутри предметов'),
+    table(['Раздел','Просмотры','Людей','В среднем','Всего'],secs.map(x=>[KIND[x.kind]||x.kind,bar(x.views,mk),String(x.visitors),dur(x.avg_sec),dur(x.total_sec)])),
+    el('h3',{class:'st-h'},'Популярные страницы'),
+    table(['Страница','Просмотры','Людей','В среднем'],pages.map(x=>[el('a',{href:'./#/'+(x.path==='home'?'':x.path),target:'_blank',rel:'noopener'},x.title||x.path),String(x.views),String(x.visitors),dur(x.avg_sec)])),
+    el('h3',{class:'st-h'},'Устройства и язык'),
+    el('div',{class:'st-kpis'},kpi(dev.mobile||0,'с телефона'),kpi(dev.desktop||0,'с компьютера'),kpi(lng.ru||0,'на русском'),kpi(lng.en||0,'на английском'))),
+    el('p',{class:'meta'},'Статистика анонимная: без IP, email и cookies. Время считается, только пока вкладка открыта на экране. Дни — по времени Астаны.'));
 }
 function renderAdmins(list,rows){
   list.replaceChildren(...rows.map(r=>el('div',{class:'adm-item'},
