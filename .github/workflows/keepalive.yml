@@ -1,0 +1,29 @@
+name: Supabase keep-alive
+
+# Раз в день обращаемся к базе, чтобы бесплатный проект Supabase не засыпал после недели без активности.
+on:
+  schedule:
+    - cron: '17 6 * * *'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  ping:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Ping database
+        run: |
+          set -e
+          # публичные значения из config.js (publishable-ключ рассчитан на браузер)
+          URL='https://slcfiwjijsqxmewqvlsr.supabase.co'
+          KEY='sb_publishable_jMstFUlTGnYXxi6FWW1kfg_4SHdmp3y'
+          for i in 1 2 3; do
+            out=$(curl -sS -m 30 -X POST "$URL/rest/v1/rpc/ping" -H "apikey: $KEY" -H "Content-Type: application/json" -d '{}' || true)
+            echo "response: $out"
+            [ "$out" = '"ok"' ] && exit 0
+            sleep 20
+          done
+          echo "Supabase did not answer — project may be paused (Restore it in the dashboard)."
+          exit 1
