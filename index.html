@@ -1,0 +1,54 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Подготовка по предметам</title>
+<meta name="description" content="Конспекты, задания с решениями, интерактивные тесты и карточки для подготовки к экзаменам: высшая математика, информатика, политология, экология, экономика.">
+<meta name="theme-color" content="#0a2463">
+<meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' https://cdn.jsdelivr.net; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src 'self' https://fonts.gstatic.com https://cdn.jsdelivr.net data:; img-src 'self' data:; connect-src 'self' https://*.supabase.co; object-src 'none'; base-uri 'self'; form-action 'self'">
+<meta name="referrer" content="strict-origin-when-cross-origin">
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' rx='9' fill='%231e4fd8'/%3E%3Ctext x='16' y='23' font-size='18' text-anchor='middle' fill='white' font-family='Arial'%3E%E2%88%91%3C/text%3E%3C/svg%3E">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Unbounded:wght@500;700&family=Onest:wght@400;500;600;700&family=JetBrains+Mono:wght@400;600&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="assets/app.css?v=2">
+<script src="assets/mathjax-config.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/mathjax@3.2.2/es5/tex-svg.js" integrity="sha384-KKWa9jJ1MZvssLeOoXG6FiOAZfAgmzsIIfw8BXwI9+kYm0lPCbC6yTQPBC00F1/L" crossorigin="anonymous" defer></script>
+</head>
+<body>
+<header class="top">
+  <button class="menu-btn" id="menuBtn" aria-label="Темы" hidden>☰</button>
+  <button class="brand" id="brand"><span class="logo">∑</span><span>Подготовка</span></button>
+  <nav class="crumbs" id="crumbs" aria-label="Навигация"></nav>
+  <div class="lang" id="lang" role="group" aria-label="Language" hidden>
+    <button id="lang-ru" aria-pressed="true">RU</button>
+    <button id="lang-en" aria-pressed="false">EN</button>
+  </div>
+  <span class="scroll-prog" id="scrollProg"></span>
+</header>
+
+<main id="home"></main>
+<div class="shell" id="shell" hidden>
+  <aside class="side" id="side"></aside>
+  <section class="main"><article class="sheet" id="view"></article></section>
+</div>
+
+<footer class="foot"><span id="footText"></span> · <span>© 2026</span></footer>
+
+<button class="fb-open" id="fbOpen" type="button"></button>
+<dialog class="fb" id="fbDlg">
+  <form id="fbForm" method="dialog">
+    <h3 id="fbTitle"></h3>
+    <textarea id="fbText" rows="5" maxlength="2000" required></textarea>
+    <input id="fbHp" class="hp" tabindex="-1" autocomplete="off" aria-hidden="true">
+    <div class="st" id="fbSt" role="status"></div>
+    <div class="row"><button class="btn ghost" type="button" id="fbCancel"></button><button class="btn primary" type="submit" id="fbSend"></button></div>
+  </form>
+</dialog>
+
+<script src="config.js"></script>
+<script src="content.js"></script>
+<script src="assets/app.js?v=3"></script>
+</body>
+</html>
