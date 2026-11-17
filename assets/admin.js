@@ -36,21 +36,52 @@ async function api(path,opt={}){
 }
 
 /* ----- вход ----- */
+async function fn(body){
+  const r=await fetch(URL_+'/functions/v1/admin-api',{method:'POST',headers:{'apikey':KEY,'Content-Type':'application/json'},body:JSON.stringify(body)});
+  if(!r.ok)throw new Error('HTTP '+r.status);return r.json();
+}
+const getEmail=()=>{const e=$('#email').value.trim().toLowerCase();if(!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(e)){status('Введи корректный email','bad');return ''}return e};
+function cooldown(btn){btn.disabled=true;setTimeout(()=>{btn.disabled=false},60000)}
 $('#loginForm').onsubmit=async e=>{
-  e.preventDefault();const email=$('#email').value.trim().toLowerCase();if(!email)return;
-  $('#sendLink').disabled=true;status('Отправляю письмо…');
+  e.preventDefault();const email=getEmail();if(!email)return;
+  cooldown($('#sendTg'));status('Отправляю код в Telegram…');
+  try{await fn({action:'login_code',email});
+    status('Если к этому email привязан Telegram, код уже в боте. Не пришёл за минуту — нажми «Письмо на email».','good');
+    $('#codeForm').hidden=false;$('#code').focus();
+  }catch(err){status('Не удалось: '+err.message,'bad')}
+};
+$('#sendLink').onclick=async()=>{
+  const email=getEmail();if(!email)return;
+  cooldown($('#sendLink'));status('Отправляю письмо…');
   try{
     const back=location.origin+location.pathname;
     await auth('otp?redirect_to='+encodeURIComponent(back),{email,create_user:true});
     status('Письмо отправлено на '+email+'. Открой ссылку из письма на этом устройстве или введи код.','good');
     $('#codeForm').hidden=false;
   }catch(err){status('Не удалось отправить: '+err.message,'bad')}
-  finally{setTimeout(()=>{$('#sendLink').disabled=false},30000)}
 };
 $('#codeForm').onsubmit=async e=>{
-  e.preventDefault();const email=$('#email').value.trim().toLowerCase(),code=$('#code').value.trim();if(!email||!code)return;
-  try{const j=await auth('verify',{type:'email',email,token:code});save(fromTokenResponse(j));start()}
-  catch(err){status('Код не подошёл: '+err.message,'bad')}
+  e.preventDefault();const email=getEmail(),code=$('#code').value.replace(/\D/g,'');if(!email||!code)return;
+  try{let j;try{j=await auth('verify',{type:'email',email,token:code})}catch(_){j=await auth('verify',{type:'magiclink',email,token:code})}
+    save(fromTokenResponse(j));start()}
+  catch(err){status('Код не подошёл или устарел','bad')}
+};
+$('#reqLink').onclick=e=>{e.preventDefault();$('#reqForm').hidden=false;$('#reqNote').focus()};
+async function sendRequest(email,note,st){
+  try{await fn({action:'request_access',email,note});st('Заявка отправлена. Когда её примут, войди по письму на email.','good')}
+  catch(err){st('Не удалось: '+err.message,'bad')}
+}
+$('#reqForm').onsubmit=async e=>{e.preventDefault();const email=getEmail();if(!email)return;e.target.querySelector('button').disabled=true;
+  await sendRequest(email,$('#reqNote').value.trim(),status)};
+$('#reqForm2').onsubmit=async e=>{e.preventDefault();if(!sess)return;e.target.querySelector('button').disabled=true;
+  await sendRequest(sess.email,$('#reqNote2').value.trim(),(m,k)=>{const s=$('#reqSt2');s.textContent=m;s.className='st '+(k||'')})};
+$('#linkTg').onclick=async()=>{
+  const s=$('#linkSt');
+  try{const t=await api('rpc/create_tg_link',{method:'POST',body:'{}'});
+    const url='https://t.me/'+(cfg.tgBot||'')+'?start=link_'+t;
+    window.open(url,'_blank','noopener');
+    s.className='st good';s.textContent='';s.append('Открой бота и нажми «Start». Ссылка действует 15 минут: ',el('a',{href:url,target:'_blank',rel:'noopener'},'открыть бота'));
+  }catch(err){s.className='st bad';s.textContent='Не получилось: '+err.message}
 };
 $('#logout').onclick=async()=>{
   try{const t=sess&&sess.access_token;if(t)await fetch(URL_+'/auth/v1/logout',{method:'POST',headers:{'apikey':KEY,'Authorization':'Bearer '+t}})}catch(_){}
@@ -98,7 +129,7 @@ async function counts(){
 }
 async function refresh(){
   const list=$('#list');list.replaceChildren(el('div',{class:'adm-empty'},'Загрузка…'));
-  $('#addAdmin').hidden=tab!=='admins';
+  $('#adminTools').hidden=tab!=='admins';
   $('.adm-bar label').hidden=tab==='admins';
   try{
     if(tab==='admins')return renderAdmins(list,await api('admins?select=*&order=created_at'));
@@ -124,7 +155,8 @@ function renderRows(list,rows){
 }
 function renderAdmins(list,rows){
   list.replaceChildren(...rows.map(r=>el('div',{class:'adm-item'},
-    el('div',{class:'meta'},el('span',null,'добавлен '+fmt(r.created_at)),r.added_by?el('span',null,'кем: '+r.added_by):null),
+    el('div',{class:'meta'},el('span',null,'добавлен '+fmt(r.created_at)),r.added_by?el('span',null,'кем: '+r.added_by):null,
+      r.tg_chat?el('span',{class:'tgok'},'📱 Telegram привязан'):el('span',null,'Telegram не привязан')),
     el('div',{class:'msg'},r.email+(r.email===sess.email?' (это ты)':'')),
     r.email===sess.email?null:el('div',{class:'acts'},el('button',{class:'btn ghost sm',on:{click:async()=>{if(confirm('Убрать '+r.email+' из админов?'))await act(()=>api('admins?email=eq.'+encodeURIComponent(r.email),{method:'DELETE'}))}}},'Убрать'))
   )));

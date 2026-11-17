@@ -1,64 +1,79 @@
-<!DOCTYPE html>
+﻿<!DOCTYPE html>
 <html lang="ru">
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>Админка · Подготовка</title>
+<title>РђРґРјРёРЅРєР° В· РџРѕРґРіРѕС‚РѕРІРєР°</title>
 <meta name="robots" content="noindex,nofollow">
 <meta name="theme-color" content="#0a2463">
 <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self'; style-src 'self' https://fonts.googleapis.com; font-src https://fonts.gstatic.com; img-src 'self' data:; connect-src https://*.supabase.co; object-src 'none'; base-uri 'self'; form-action 'self'">
 <meta name="referrer" content="no-referrer">
 <link href="https://fonts.googleapis.com/css2?family=Unbounded:wght@500;700&family=Onest:wght@400;500;600;700&display=swap" rel="stylesheet">
 <link rel="stylesheet" href="assets/app.css?v=4">
-<link rel="stylesheet" href="assets/admin.css?v=1">
+<link rel="stylesheet" href="assets/admin.css?v=2">
 </head>
 <body class="adm">
 <header class="top">
-  <a class="brand" href="./"><span class="logo">∑</span><span>Подготовка</span></a>
-  <span class="adm-badge">админка</span>
+  <a class="brand" href="./"><span class="logo">в€‘</span><span>РџРѕРґРіРѕС‚РѕРІРєР°</span></a>
+  <span class="adm-badge">Р°РґРјРёРЅРєР°</span>
   <span class="adm-user" id="who"></span>
-  <button class="btn ghost sm" id="logout" hidden>Выйти</button>
+  <button class="btn ghost sm" id="logout" hidden>Р’С‹Р№С‚Рё</button>
 </header>
 
 <main class="adm-main">
   <section class="adm-card" id="login" hidden>
-    <h1>Вход в админку</h1>
-    <p class="muted">Введи email. Придёт письмо со ссылкой для входа (и, возможно, кодом).</p>
+    <h1>Р’С…РѕРґ РІ Р°РґРјРёРЅРєСѓ</h1>
+    <p class="muted">Р’РІРµРґРё email. Р•СЃР»Рё Рє РЅРµРјСѓ РїСЂРёРІСЏР·Р°РЅ Telegram, РєРѕРґ РїСЂРёРґС‘С‚ РІ Р±РѕС‚Р°. РРЅР°С‡Рµ вЂ” РїРёСЃСЊРјРѕРј.</p>
     <form id="loginForm" class="adm-form">
       <input type="email" id="email" placeholder="you@example.com" required autocomplete="email">
-      <button class="btn primary" type="submit" id="sendLink">Получить ссылку</button>
+      <button class="btn primary" type="submit" id="sendTg">РљРѕРґ РІ Telegram</button>
+      <button class="btn ghost" type="button" id="sendLink">РџРёСЃСЊРјРѕ РЅР° email</button>
     </form>
     <form id="codeForm" class="adm-form" hidden>
-      <input type="text" id="code" placeholder="Код из письма" inputmode="numeric" autocomplete="one-time-code" maxlength="10">
-      <button class="btn primary" type="submit">Войти по коду</button>
+      <input type="text" id="code" placeholder="РљРѕРґ (6 С†РёС„СЂ)" inputmode="numeric" autocomplete="one-time-code" maxlength="10">
+      <button class="btn primary" type="submit">Р’РѕР№С‚Рё</button>
     </form>
     <div class="st" id="loginSt" role="status"></div>
+    <p class="muted small"><a href="#" id="reqLink">РќРµС‚ РґРѕСЃС‚СѓРїР°? Р—Р°РїСЂРѕСЃРёС‚СЊ</a></p>
+    <form id="reqForm" class="adm-form" hidden>
+      <input type="text" id="reqNote" maxlength="300" placeholder="РљС‚Рѕ С‚С‹ Рё Р·Р°С‡РµРј РґРѕСЃС‚СѓРї (РЅРµРѕР±СЏР·Р°С‚РµР»СЊРЅРѕ)">
+      <button class="btn ghost" type="submit">РћС‚РїСЂР°РІРёС‚СЊ Р·Р°СЏРІРєСѓ</button>
+    </form>
   </section>
 
   <section class="adm-card" id="denied" hidden>
-    <h1>Нет доступа</h1>
-    <p class="muted">Этот аккаунт не добавлен в администраторы. Попроси владельца сайта добавить твой email.</p>
+    <h1>РќРµС‚ РґРѕСЃС‚СѓРїР°</h1>
+    <p class="muted">Р­С‚РѕС‚ Р°РєРєР°СѓРЅС‚ РЅРµ РІ СЃРїРёСЃРєРµ Р°РґРјРёРЅРёСЃС‚СЂР°С‚РѕСЂРѕРІ. РћС‚РїСЂР°РІСЊ Р·Р°СЏРІРєСѓ вЂ” РІР»Р°РґРµР»РµС† РїРѕР»СѓС‡РёС‚ РµС‘ РІ Telegram Рё СЃРјРѕР¶РµС‚ РїСЂРёРЅСЏС‚СЊ РѕРґРЅРёРј РЅР°Р¶Р°С‚РёРµРј.</p>
+    <form id="reqForm2" class="adm-form">
+      <input type="text" id="reqNote2" maxlength="300" placeholder="РљС‚Рѕ С‚С‹ Рё Р·Р°С‡РµРј РґРѕСЃС‚СѓРї (РЅРµРѕР±СЏР·Р°С‚РµР»СЊРЅРѕ)">
+      <button class="btn primary" type="submit">Р—Р°РїСЂРѕСЃРёС‚СЊ РґРѕСЃС‚СѓРї</button>
+    </form>
+    <div class="st" id="reqSt2" role="status"></div>
   </section>
 
   <section id="panel" hidden>
     <nav class="adm-tabs" role="tablist">
-      <button data-tab="feedback" class="on">Сообщения <span class="cnt" id="cnt-feedback"></span></button>
-      <button data-tab="errors">Ошибки <span class="cnt" id="cnt-errors"></span></button>
-      <button data-tab="admins">Админы</button>
+      <button data-tab="feedback" class="on">РЎРѕРѕР±С‰РµРЅРёСЏ <span class="cnt" id="cnt-feedback"></span></button>
+      <button data-tab="errors">РћС€РёР±РєРё <span class="cnt" id="cnt-errors"></span></button>
+      <button data-tab="admins">РђРґРјРёРЅС‹</button>
     </nav>
     <div class="adm-bar">
-      <label><input type="checkbox" id="showResolved"> показывать решённые</label>
-      <button class="btn ghost sm" id="reload">Обновить</button>
+      <label><input type="checkbox" id="showResolved"> РїРѕРєР°Р·С‹РІР°С‚СЊ СЂРµС€С‘РЅРЅС‹Рµ</label>
+      <button class="btn ghost sm" id="reload">РћР±РЅРѕРІРёС‚СЊ</button>
     </div>
     <div id="list" class="adm-list"></div>
-    <form id="addAdmin" class="adm-form" hidden>
-      <input type="email" id="newAdmin" placeholder="email нового админа" required>
-      <button class="btn primary" type="submit">Добавить</button>
-    </form>
+    <div id="adminTools" hidden>
+      <form id="addAdmin" class="adm-form">
+        <input type="email" id="newAdmin" placeholder="email РЅРѕРІРѕРіРѕ Р°РґРјРёРЅР°" required>
+        <button class="btn primary" type="submit">Р”РѕР±Р°РІРёС‚СЊ</button>
+      </form>
+      <div class="adm-form"><button class="btn ghost" type="button" id="linkTg">рџ“± РџСЂРёРІСЏР·Р°С‚СЊ РјРѕР№ Telegram</button></div>
+      <div class="st" id="linkSt" role="status"></div>
+    </div>
   </section>
 </main>
 
 <script src="config.js"></script>
-<script src="assets/admin.js?v=1"></script>
+<script src="assets/admin.js?v=2"></script>
 </body>
 </html>
