@@ -9,7 +9,7 @@ body:String.raw`
 
 <h2><span class="k">2</span>The greenhouse effect</h2>
 <div class="box def"><span class="t">Definition</span><b>Greenhouse effect</b> — the process by which atmospheric gases absorb and emit <b>infrared radiation</b>, warming the lower atmosphere and the planet's surface.</div>
-<p>How it works: visible sunlight is partly reflected (by clouds, snow, aerosols) and partly passes through the atmosphere and heats the surface. Earth then radiates heat as long-wave infrared light; greenhouse gases absorb it and re-emit it in all directions, partly back toward the surface. Without this, the average temperature would be about −17 °C (33 °C lower), the oceans would freeze, and higher forms of life would not have appeared. Therefore the greenhouse effect has always existed; the problem is its enhancement.</p>
+<p>How it works: visible sunlight is partly reflected (by clouds, snow, aerosols) and partly passes through the atmosphere and heats the surface. Earth then radiates heat as long-wave infrared light; greenhouse gases absorb it and re-emit it in all directions, partly back toward the surface. Without this, the average temperature would be about −17 °C (roughly 32 °C below today’s +15 °C), the oceans would freeze, and higher forms of life would not have appeared. Therefore the greenhouse effect has always existed; the problem is its enhancement.</p>
 <p>Composition of the atmosphere: about 78% nitrogen, 21% oxygen, 0.9% argon and only about 0.1% natural greenhouse gases, yet these are what make the effect possible.</p>
 <div class="tw"><table><thead><tr><th>Greenhouse gas</th><th>Share of the effect</th></tr></thead><tbody>
 <tr><td>water vapor</td><td>36–70%</td></tr>

@@ -30,4 +30,24 @@ for(const s of S){const ts=T[s.id];const ids=new Set();
 }
 const noEn=[];for(const s of S)if((s.langs||[]).includes('en')&&s.id!=='hm')for(const t of T[s.id])if(!enSeen[s.id+'/'+t.id])noEn.push(s.id+'/'+t.id);
 if(noEn.length)console.log('без перевода:',noEn.length,noEn.join(' '));
+// версии конспекта «Коротко» и «Простыми словами»: <предмет>/lv/<тема>.js
+let lvN=0;
+for(const s of S){const dir=path.join(root,s.id,'lv');if(!fs.existsSync(dir))continue;
+ for(const f of fs.readdirSync(dir).filter(f=>f.endsWith('.js'))){const id=f.slice(0,-3),k=s.id+'/'+id;let got=null;
+  ctx.addLevels=(sid,tid,d)=>{if(sid!==s.id||tid!==id)bad(k+' lv: addLevels('+sid+','+tid+') в чужом файле');got=d};
+  try{vm.runInContext(fs.readFileSync(path.join(dir,f),'utf8'),ctx,{filename:k+'/lv'})}catch(e){bad(k+' lv: '+e.message);continue}
+  if(!T[s.id].find(t=>t.id===id))bad(k+' lv: нет такой темы');
+  if(!got){bad(k+' lv: нет addLevels');continue}lvN++;
+  for(const [fld,min,max] of [['short',300,4500],['simple',2000,25000]]){const h=got[fld];
+   if(typeof h!=='string'||!h.trim()){bad(`${k} lv.${fld}: пусто`);continue}
+   if(h.length<min||h.length>max)bad(`${k} lv.${fld}: длина ${h.length} (нужно ${min}–${max})`);
+   const cnt=re=>(h.match(re)||[]).length;
+   if(cnt(/\\\(/g)!==cnt(/\\\)/g))bad(`${k} lv.${fld}: не закрыта формула \\( \\)`);
+   if(cnt(/\\\[/g)!==cnt(/\\\]/g))bad(`${k} lv.${fld}: не закрыта формула \\[ \\]`);
+   for(const tg of ['div','ol','ul','li','table','p','h2','h3','b'])if(cnt(new RegExp('<'+tg+'[\\s>]','g'))!==cnt(new RegExp('</'+tg+'>','g')))bad(`${k} lv.${fld}: не закрыт тег <${tg}>`);
+   if(/[\u{1F300}-\u{1FAFF}\u{2600}-\u{27BF}]/u.test(h))bad(`${k} lv.${fld}: эмодзи`);
+   if(/давай разбер|в этой статье|готовься с нами|надеюсь,? (теперь )?стало понятно/i.test(h))bad(`${k} lv.${fld}: шаблонная фраза`);
+   if(/^\s*\d+\.\s/m.test(h.replace(/\\\[[\s\S]*?\\\]/g,'')))bad(`${k} lv.${fld}: шаги строками «1. …» вместо <ol>`);
+  }}}
+console.log('версии конспекта:',lvN,'тем');
 console.log(tot,err?err+' errors':'OK');process.exit(err?1:0);

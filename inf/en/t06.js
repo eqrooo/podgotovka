@@ -23,7 +23,7 @@ body:String.raw`
 <h2><span class="k">3</span>Octal arithmetic</h2>
 <p>A carry occurs when the sum is 8 or more: \(6+2=8=10_8\), i.e. write 0 and carry 1.</p>
 <div class="box ex"><span class="t">Addition: 156₈ + 662₈</span>6+2=8 → 0, carry 1; 5+6+1=12=8+4 → 4, carry 1; 1+6+1=8 → 0, carry 1; write 1. Answer: \(1040_8\). Check: \(110+434=544=1\cdot512+0+4\cdot8+0\).</div>
-<div class="box ex"><span class="t">Subtraction: 4568 − 2778</span>6−7 → borrow: 6+8−7=7; 5−1−7 → borrow: (5−1)+8−7=5; 4−1−2=1. Answer: \(157_8\). Check: \(302-191=111=1\cdot64+5\cdot8+7\).</div>
+<div class="box ex"><span class="t">Subtraction: 456₈ − 277₈</span>6−7 → borrow: 6+8−7=7; 5−1−7 → borrow: (5−1)+8−7=5; 4−1−2=1. Answer: \(157_8\). Check: \(302-191=111=1\cdot64+5\cdot8+7\).</div>
 <div class="box ex"><span class="t">Multiplication: 725₈ · 14₈</span>725·4 = 3524 (5·4=20=24₈: write 4, carry 2; 2·4+2=10=12₈: write 2, carry 1; 7·4+1=29=35₈). 725·1=725, shifted: 7250. Sum 3524+7250 = 12774. Answer: \(12774_8\).</div>
 
 <h2><span class="k">4</span>Hexadecimal arithmetic</h2>
