@@ -13,7 +13,7 @@ window.addEn=function(subj,id,d){const t=(TOPICS[subj]||[]).find(x=>x.id===id);i
   (d.quiz||[]).forEach((q,i)=>{const o=(t.quiz||[])[i];if(!o||!q)return;setEn(o,'q',q.q);setEn(o,'solution',q.solution);
     (q.options||[]).forEach((v,j)=>{if(o.options[j]!=null&&v!=null&&v!==L0(o.options[j]))setEn(o.options,j,v)})});};
 /* короткая версия и «простыми словами»: файлы <предмет>/lv/<тема>.js грузятся только когда их открыли */
-window.addLevels=function(subj,id,d){const t=(TOPICS[subj]||[]).find(x=>x.id===id);if(t)t.levels=d};
+window.addLevels=function(subj,id,d,lg){const t=(TOPICS[subj]||[]).find(x=>x.id===id);if(t)t[lg==='en'?'levelsEn':'levels']=d};
 const L0=o=>typeof o==='string'?o:(o&&o.ru);
 
 const UI={
@@ -50,7 +50,7 @@ const UI={
     ['Take the topic quiz.','After each answer you see what was wrong and why.'],
     ['Review terms with flashcards.','Mark what you know; the rest comes back again.'],
     ['Mark the topic as learned.','Progress is saved in this browser. Before the exam, take the module and final quizzes.']],
-  lvShort:'Short',lvFull:'Full',lvSimple:'Plain words',lvHint:{short:'',full:'',simple:''},lvLoad:'Loading…',lvErr:'Could not load. Check your connection and try again.',
+  lvShort:'Short',lvFull:'Full',lvSimple:'Plain words',lvHint:{short:'Key points only: definitions, formulas, rules. For quick review.',full:'The full lecture notes with examples.',simple:'Explained from scratch, step by step, with everyday examples.'},lvLoad:'Loading…',lvErr:'Could not load. Check your connection and try again.',
   allCards:'All subject flashcards',exam:'Final subject quiz',modTest:'Module quiz',topicTest:'Topic quiz',qs:'q.',q:'Question',of:'of',next:'Next',finish:'Results',
   right:'Correct!',wrong:'Wrong',again:'Try again',best:'Best score',solution:'Solution',
   res:[[90,'Excellent result.'],[70,'Good. Review a couple of topics.'],[50,'Half right — review the notes.'],[0,'Not yet: re-read the notes and try again.']],
@@ -170,16 +170,16 @@ function renderTab(s,t){
   else body.innerHTML=`<div class="tw"><table><thead><tr><th>${u.term}</th><th>${u.trans}</th></tr></thead><tbody>${gl.map(r=>`<tr><td><b>${r[0]}</b></td><td>${r[1]}${r[2]?`<br><small style="color:var(--muted)">${r[2]}</small>`:''}</td></tr>`).join('')}</tbody></table></div>`;
   typeset(body);
 }
-function loadLevels(sid,id){
-  const k=sid+'/'+id;loadLevels.p=loadLevels.p||{};
-  if(!loadLevels.p[k])loadLevels.p[k]=new Promise((res,rej)=>{const sc=document.createElement('script');sc.src=sid+'/lv/'+id+'.js?v='+(window.LEVELS_V||'');sc.dataset.l='1';
+function loadLevels(sid,id,en){
+  const k=(en?'en/':'')+sid+'/'+id;loadLevels.p=loadLevels.p||{};
+  if(!loadLevels.p[k])loadLevels.p[k]=new Promise((res,rej)=>{const sc=document.createElement('script');sc.src=sid+'/lv/'+(en?'en/':'')+id+'.js?v='+(window.LEVELS_V||'');sc.dataset.l='1';
     sc.onload=res;sc.onerror=()=>{sc.remove();delete loadLevels.p[k];rej()};document.head.appendChild(sc)});
   return loadLevels.p[k];
 }
 function renderNotes(body,s,t){
-  const u=U(),key=s.id+'/'+t.id,has=curLang()==='ru'&&(window.LEVELS||[]).includes(key);
+  const u=U(),key=s.id+'/'+t.id,en=curLang()==='en',has=(en?(window.LEVELS_EN||[]):(window.LEVELS||[])).includes(key),lk=en?'levelsEn':'levels';
   if(!has){body.innerHTML=`<div class="notes">${L(t.body)||`<p>${u.noData}</p>`}</div>`;typeset(body);return}
-  body.innerHTML=`<div class="lvl" role="group" aria-label="Версия конспекта"><span class="lvl-ind"></span>${[['short',u.lvShort],['full',u.lvFull],['simple',u.lvSimple]].map(([k,l])=>`<button type="button" data-lv="${k}">${l}</button>`).join('')}</div>
+  body.innerHTML=`<div class="lvl" role="group" aria-label="${en?'Notes version':'Версия конспекта'}"><span class="lvl-ind"></span>${[['short',u.lvShort],['full',u.lvFull],['simple',u.lvSimple]].map(([k,l])=>`<button type="button" data-lv="${k}">${l}</button>`).join('')}</div>
     <p class="lvl-hint" id="lvHint"></p><div class="notes" id="notesBox"></div>`;
   const box=body.querySelector('#notesBox'),hint=body.querySelector('#lvHint');
   let want='full';
@@ -188,10 +188,10 @@ function renderNotes(body,s,t){
     body.querySelectorAll('[data-lv]').forEach(b=>b.setAttribute('aria-pressed',b.dataset.lv===k));hint.textContent=u.lvHint[k]||'';moveLvl(body.querySelector('.lvl'));
     box.classList.remove('swap');void box.offsetWidth;box.classList.add('swap');
     if(k==='full'){box.innerHTML=L(t.body);typeset(box);return}
-    if(!t.levels){box.innerHTML=`<p class="lvl-load">${u.lvLoad}</p>`;
-      try{await loadLevels(s.id,t.id)}catch(_){if(want===k)box.innerHTML=`<p class="lvl-load">${u.lvErr}</p>`;return}}
+    if(!t[lk]){box.innerHTML=`<p class="lvl-load">${u.lvLoad}</p>`;
+      try{await loadLevels(s.id,t.id,en)}catch(_){if(want===k)box.innerHTML=`<p class="lvl-load">${u.lvErr}</p>`;return}}
     if(want!==k)return; // пока грузилось, выбрали другую версию
-    box.innerHTML=(t.levels&&t.levels[k])||L(t.body);box.classList.remove('swap');void box.offsetWidth;box.classList.add('swap');typeset(box);
+    box.innerHTML=(t[lk]&&t[lk][k])||L(t.body);box.classList.remove('swap');void box.offsetWidth;box.classList.add('swap');typeset(box);
   }
   body.querySelectorAll('[data-lv]').forEach(b=>b.onclick=()=>show(b.dataset.lv));
   show(['short','full','simple'].includes(store.get('lvl','full'))?store.get('lvl','full'):'full');
